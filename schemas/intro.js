@@ -16,6 +16,10 @@ const userSchema = yup
       .moreThan(0, "Age must be greater than 0"),
     location: yup.string().required("Location is required"),
     mode: yup.string().required("Work mode is required"),
+    frameworks: yup
+      .array()
+      .min(1, "Please selectat least pne item")
+      .of(yup.string()),
   })
   .required();
 
@@ -25,6 +29,7 @@ const userInit = {
   age: "",
   location: "",
   mode: "",
+  frameworks: [],
 };
 
 export { userInit, userSchema };

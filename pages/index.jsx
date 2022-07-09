@@ -27,7 +27,7 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className="flex items-center justify-center w-full min-h-screen ">
+      <main className="flex items-center justify-center w-full min-h-screen p-4">
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="w-[95vw] max-w-sm rounded-md p-4 shadow bg-green-200"
@@ -139,6 +139,60 @@ export default function Home() {
 
             <small className="italic text-red-400">
               {errors?.mode?.message}
+            </small>
+          </div>
+
+          <div className="relative mb-6">
+            <label className="block text-base font-medium">Frameworks</label>
+
+            <div className="flex flex-wrap items-center justify-between">
+              <label className="grid gap-1 grid-cols-[40px_minmax(0,1fr)]">
+                <input
+                  value="React"
+                  type="checkbox"
+                  name="frameworks"
+                  {...register("frameworks")}
+                />
+
+                <span>React</span>
+              </label>
+
+              <label className="grid gap-1 grid-cols-[40px_minmax(0,1fr)]">
+                <input
+                  value="Angular"
+                  type="checkbox"
+                  name="frameworks"
+                  {...register("frameworks")}
+                />
+
+                <span>Angular</span>
+              </label>
+
+              <label className="grid gap-1 grid-cols-[40px_minmax(0,1fr)]">
+                <input
+                  value="Vue"
+                  type="checkbox"
+                  name="frameworks"
+                  {...register("frameworks")}
+                />
+
+                <span>Vue</span>
+              </label>
+
+              <label className="grid gap-1 grid-cols-[40px_minmax(0,1fr)]">
+                <input
+                  value="Svelte"
+                  type="checkbox"
+                  name="frameworks"
+                  {...register("frameworks")}
+                />
+
+                <span>Svelte</span>
+              </label>
+            </div>
+
+            <small className="italic text-red-400">
+              {errors?.frameworks?.message}
             </small>
           </div>
 
