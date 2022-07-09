@@ -1,0 +1,505 @@
+Validating user input ***before*** it gets into our systems, is an important step in ensuring that our users do not create invalid entries, that may cause unpredictable behaviors in our apps.
+
+Implementing server-side validation and even database validation is a requirement if you want to build safer, secure, and more predictable apps. However, validation on the front end provides users with faster feedback that lets them spot errors before making a network request.
+
+In this article, we will be exploring [react-hook-form](https://react-hook-form.com) and [yup](https://github.com/jquense/yup) and how we can use these two libraries to validate our user inputs.
+
+
+#### [React Hook Form](https://react-hook-form.com/get-started)
+This is a small but quite powerful library that developers can use to create highly performant forms. It does this by making use of refs,  instead of state and therefore minimizing the number of rerenders due to state change as a user updates the value of a field. It also provides hooks and components for interfacing with 3rd party components that rely on state changes. It can also be used with React Native.
+You can see their docs [here](https://react-hook-form.com/get-started).
+
+#### Yup
+Yup is a validation library that helps us define rules for values via creating schemas. It provides a lot of functions to validate typical constraints such as is required, email, and so on. We can also extend it by writing our own custom rules. See more [here](https://github.com/jquense/yup).
+
+React Hook Form *can* be used without yup, but when used together these two libraries are paired up, we as developers can code highly flexible, performant, and easy-to-maintain forms.
+
+#### Project setup
+For this project, I'm going to be using NextJS. This is because I want to separate each use case into individual pages and Next comes with prebuilt routing capabilities, but you can use plain ReactJS. 
+
+To initialize a new NextJS project, open up your terminal and run
+
+
+```
+npx create-next-app@latest react-hook-form-yup
+```
+
+or
+
+```
+yarn create next-app react-hook-form-yup
+```
+
+After creating, we want to install the yup, react hook form, and [@hookform/resolvers](https://www.npmjs.com/package/@hookform/resolvers).
+
+
+```
+npm install yup  @hookform/resolvers react-hook-form
+```
+
+or
+
+```
+yarn add yup  @hookform/resolvers react-hook-form
+```
+
+*For styling, I'm using [tailwindcss](https://tailwindcss.com/docs/guides/nextjs), but you can use whatever solution you prefer.*
+
+After creating our project with next, we start it by running 
+
+```
+yarn dev 
+```
+
+or
+
+```
+npm run dev
+```
+
+In our browser, we navigate to `http://localhost:3000/` and we see that our next app with its default page is running.
+
+#### Simple inputs
+Now that we've set up our project, let's create a basic user form. Our form should have the following fields and constraints
+
+- username, required 
+- email, is required and must be a valid email
+- age, required and must be a positive integer that is greater than 0
+
+with these requirements, let us develop our schema first
+
+Create a folder called `schemas`, then create a file called `intro.js` 
+
+My folder structure is as follows
+![schemas.PNG](https://cdn.hashnode.com/res/hashnode/image/upload/v1657374044683/vY5vatv_Q.PNG align="left")
+
+In `intro.js`, import yup as so 
+
+```js
+import * as yup from "yup";
+```
+
+we can create a variable called *userSchema* and define it as
+
+```js
+const userSchema = yup
+  .object()
+  .shape({})
+  .required();
+```
+
+This initiates a yup schema that has to be an object, we can then define the required fields within the shape({}).
+
+Starting with the user's name field, we know that it is required, let's add a rule for that
+
+```js
+import * as yup from "yup";
+
+const userSchema = yup
+  .object()
+  .shape({
+    name: yup.string().required(),
+  })
+  .required();
+```
+We can also pass in custom strings to use as error messages.
+
+```js
+import * as yup from "yup";
+
+const userSchema = yup
+  .object()
+  .shape({
+    name: yup.string().required("Name is required"),
+  })
+  .required();
+```
+
+For the email field, we want it to be required and match the pattern for emails, yup provides a helper method we can use 
+
+```js
+import * as yup from "yup";
+
+const userSchema = yup
+  .object()
+  .shape({
+    name: yup.string().required("Name is required"),
+    email: yup
+      .string()
+      .email("Please enter a valid email")
+      .required("Email is required"),
+  })
+  .required();
+```
+
+In this case, we have an error message for no email provided, and another for invalid email.
+
+For age, we need a positive integer, we can define that constraint as 
+
+```js
+import * as yup from "yup";
+
+const userSchema = yup
+  .object()
+  .shape({
+    name: yup.string().required("Name is required"),
+    email: yup
+      .string()
+      .email("Please enter a valid email")
+      .required("Email is required"),
+    age: yup
+      .number()
+      .typeError("Must be  a number")
+      .required("Please enter a valid age")
+      .integer("Age must be a whole number")
+      .moreThan(0, "Age must be greater than 0")
+      ,
+  })
+  .required();
+
+```
+
+As you can see, it's very easy to attach multiple constraints to a single field and provide custom error messages for each rule violation.
+
+It's also a good idea to create initial values for our fields, let's do that by initializing each field to an empty string
+
+So our `intro.js` file becomes 
+
+```js
+import * as yup from "yup";
+
+const userSchema = yup
+  .object()
+  .shape({
+    name: yup
+      .string()
+      .required("Name is required")
+    email: yup
+      .string()
+      .email("Please enter a valid email")
+      .required("Email is required"),
+   age: yup
+      .number()
+      .typeError("Must be  a number")
+      .required("Please enter a valid age")
+      .integer("Age must be a whole number")
+      .moreThan(0, "Age must be greater than 0"),
+  })
+  .required();
+
+const userInit = {
+  name: "",
+  email: "",
+  age: "",
+};
+
+export { userInit, userSchema };
+
+```
+
+So far we've just created our schema, let's use it in a component.
+
+First, let's create our markup and style it. 
+
+```jsx
+
+import Head from "next/head";
+
+export default function Home() {
+  const onSubmit = (e) => {
+    e.preventDefault();
+  };
+
+  return (
+    <div>
+      <Head>
+        <title>React Hook Form and Yup</title>
+        <meta name="description" content="Generated by create next app" />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+
+      <main className="flex items-center justify-center w-full min-h-screen ">
+        <form
+          onSubmit={onSubmit}
+          className="w-[95vw] max-w-sm rounded-md p-4 shadow bg-green-200"
+        >
+          <h4 className="my-2 text-lg font-semibold text-center">User Form</h4>
+          <hr className="mb-6 border-slate-500" />
+
+          {/* NAME FIELD */}
+
+          <div className="relative mb-6">
+            <label htmlFor="name" className="block text-base font-medium">
+              Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              className="w-full p-1 my-1 text-base text-gray-900 border border-gray-300 rounded-sm "
+            />
+          </div>
+
+          {/* EMAIL FIELD */}
+
+          <div className="relative mb-6">
+            <label htmlFor="email" className="block text-base font-medium">
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              className="w-full p-1 my-1 text-base text-gray-900 border border-gray-300 rounded-sm "
+            />
+          </div>
+
+          {/* AGE FIELD */}
+
+          <div className="relative mb-6">
+            <label htmlFor="age" className="block text-base font-medium">
+              Age
+            </label>
+            <input
+              type="number"
+              id="age"
+              className="w-full p-1 my-1 text-base text-gray-900 border border-gray-300 rounded-sm "
+            />
+          </div>
+
+          <div className="flex justify-center m-2">
+            <button
+              type="submit"
+              className="p-2 px-4 text-white bg-green-800 rounded-xl"
+            >
+              Submit
+            </button>
+          </div>
+        </form>
+      </main>
+    </div>
+  );
+}
+
+```
+
+Now we import useForm from reacting hook form along with our schema and initial values
+
+```jsx
+import { yupResolver } from "@hookform/resolvers/yup";
+
+import { useForm } from "react-hook-form";
+
+import { userInit,userSchema } from "../schemas/intro";
+```
+
+`useForm` is a hook provided by React Hook Form. When we call it we pass in our schema, resolver, and default values. It also returns values and methods we can use to manipulate our form. Of the many things returned, we will focus only on two as seen below
+
+```jsx
+
+import Head from "next/head";
+import { yupResolver } from "@hookform/resolvers/yup";
+
+import { useForm } from "react-hook-form";
+
+import { userInit, userSchema } from "../schemas/intro";
+
+export default function Home() {
+  const { handleSubmit, register } = useForm({
+    resolver: yupResolver(userSchema),
+    defaultValues: userInit,
+  }); // we focus on "register" and "handleSubmit" for now
+
+  return (
+    <div>
+      <Head>
+        <title>React Hook Form and Yup</title>
+        <meta name="description" content="Generated by create next app" />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+
+      <main className="flex items-center justify-center ">
+        <form>...</form>
+      </main>
+    </div>
+  );
+}
+
+
+```
+
+- `register`: allows us to connect our input field to react-hook-form. RHF will also take care of mapping it to the appropriate schemas and default values.
+- `handleSubmit` : is a function that we wrap our custom submit handler with. it takes care of e.preventDefault and returns the form values to our custom handler.
+
+To register an input, we pass in call register with the fieldName (should be the same as our schema and default Values) and spread the props. 
+
+```jsx
+   <div className="relative mb-6">
+            <label htmlFor="name" className="block text-base font-medium">
+              Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              className="w-full p-1 my-1 text-base text-gray-900 border border-gray-300 rounded-sm "
+              {...register("name")}
+            />
+          </div>
+```
+We do the same thing for the `email` and `age` fields.
+
+We also have to modify our submit handler definition and the way we call it in our form
+
+In our form, we will wrap our `onSubmit` like so
+
+```jsx
+ <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="w-[95vw] max-w-sm rounded-md p-4 shadow bg-green-200"
+        > 
+```
+
+And our `onSubmit` definition changes to 
+
+```js
+   const onSubmit = (values) => {
+    console.log(values);
+  };
+```
+
+If we head over to our browser and click submit, we see that nothing gets logged in our console.
+
+*Why?*
+Remember that we applied validation rules. All of our fields are required, but we did not fill in any values, so RHF will capture these violations as errors and prevent submission. 
+
+To give our users more information we can extract `formState` from useForm and destructure `errors`. 
+
+```js
+const {
+    handleSubmit,
+    register,
+    formState: { errors }, //destructure errors
+  } = useForm({
+    resolver: yupResolver(userSchema),
+    defaultValues: userInit,
+  });
+```
+
+This is an object with our field name as keys. Each key maps to an object with a message property that contains the message we defined in our schema. We can render this message beneath our fields as input messages like so
+
+```jsx
+ <div className="relative mb-6">
+            <label htmlFor="email" className="block text-base font-medium">
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              className="w-full p-1 my-1 text-base text-gray-900 border border-gray-300 rounded-sm "
+              {...register("email")}
+            />
+            <small className="italic text-red-400">
+              {errors?.email?.message}
+            </small>
+          </div>
+```
+We repeat the same for the other fields
+
+If we try to submit our form now with empty or invalid fields, the appropriate error message is now displayed.
+
+*The form jumps around a bit when the errors show up, we can fix this by adding `absolute` positioning, but we'll leave it for now.*
+
+_________________
+
+#### Inspecting in devtools
+If we head over to our react dev tools, and find our component, in my case `Home` and click on it
+
+![home1.PNG](https://cdn.hashnode.com/res/hashnode/image/upload/v1657378179492/vCEgF8s1X.PNG align="left")
+
+We can see the props and state of the component, we are interested in the hooks section.
+
+![stuff.PNG](https://cdn.hashnode.com/res/hashnode/image/upload/v1657378253292/fBcMjmQBz.PNG align="left")
+
+If we expand `State`, we see an error object but it's empty. The state we want will be captured under `Ref` > `controls` >  `_formState` > `errors`. If you can't see anything, close and reopen dev tools and repeat the whole process again. Since it's a ref, state changes do not always reflect immediately.
+
+
+Congratulations 🎉🎉, you now know how to set up a basic form using React Hook Form, and yup.
+
+
+#### Select, checkboxes and radio buttons
+So far we covered text input fields, but we can also use RHF with select, checkboxes, and radio buttons
+
+##### Select input
+Let's add location to our schema and init value,
+
+```js
+const userSchema = yup
+  .object()
+  .shape({
+    name: yup.string().required("Name is required"),
+    email: yup
+      .string()
+      .email("Please enter a valid email")
+      .required("Email is required"),
+    age: yup
+      .number()
+      .typeError("Must be a number")
+      .required("Please enter a valid age")
+      .integer("Age must be a whole number")
+      .moreThan(0, "Age must be greater than 0"),
+
+    location: yup.string().required("Location is required")
+  })
+  .required();
+
+const userInit = {
+  name: "",
+  email: "",
+  age: "",
+  location:""
+};
+```
+
+Then we create a select input and call the register in the select tag
+
+```jsx
+  {/* LOCATION FIELD */}
+
+          <div className="relative mb-6">
+            <label htmlFor="location" className="block text-base font-medium">
+              Location
+            </label>
+            <select
+              id="location"
+              className="w-full p-1 my-1 text-base text-gray-900 border border-gray-300 rounded-sm "
+              {...register("location")} //HERE
+            >
+              <option value="">Select...</option>
+              <option value="Abuja">Abuja</option>
+              <option value="Anambra">Anambra</option>
+              <option value="Bauchi">Bauchi</option>
+              <option value="Calabar">Calabar</option>
+              <option value="Lagos">Lagos</option>
+            </select>
+            
+            <small className="italic text-red-400">
+              {errors?.location?.message}
+            </small>
+          </div>
+```
+
+
+##### Radio buttons
+When it comes to radio buttons, we will have multiple inputs registered with the same name. Each field will then update the field accordingly.
+
+in our `intro.js`
+
+```js
+ mode: yup.string().required("Work mode is required"), //Add this
+...
+
+userInit = {...
+mode:"" , //Add this
+}
+```
+
+For boolean values or numbers, coerce them to strings, then on submit you can convert them back to number or boolean before sending it off to the server/API. 
+       
